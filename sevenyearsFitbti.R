@@ -40,16 +40,23 @@ steps_1min <- read_csv(here("data", "minuteStepsNarrow.csv"),
 
 # add year to daily activity
 # also add weekday variables
+# use stepday to set days with > 0 steps 
 dailyactivity <- dailyactivity %>% 
   mutate(year = year(ActivityDate),
+         month = month(ActivityDate),
          day = wday(ActivityDate, label = FALSE, week_start = getOption("lubridate.week.start", 1)),
          weekday = as.factor(case_when(day < 6 ~ "Weekday",
-                             day > 5 ~ "Weekend"))
+                             day > 5 ~ "Weekend")),
+         stepday = ifelse(TotalSteps > 0, 1, 0) 
          )
 
 # break up date and time into separate variables for minute files
+# use getOption("lubridate.week.start", 1) to set week to start on Monday
+# plottime appends current date for POSIXct format - useful during plotting
 heartrate_1min <-  heartrate_1min %>% 
   mutate(date = as.Date(Time),
+         year = year(date),
+         month = month(date),
          day = wday(date, label = FALSE, week_start = getOption("lubridate.week.start", 1)),
          weekday = as.factor(case_when(day < 6 ~ "Weekday",
                                        day > 5 ~ "Weekend")),
@@ -57,8 +64,13 @@ heartrate_1min <-  heartrate_1min %>%
          plottime = as.POSIXct(timeonly, format = "%H:%M")
   )
 
+# break up date and time into separate variables for minute files
+# use getOption("lubridate.week.start", 1) to set week to start on Monday
+# plottime appends current date for POSIXct format - useful during plotting
 steps_1min <-  steps_1min %>% 
   mutate(date = as.Date(ActivityMinute),
+         year = year(date),
+         month = month(date),
          day = wday(date, label = FALSE, week_start = getOption("lubridate.week.start", 1)),
          weekday = as.factor(case_when(day < 6 ~ "Weekday",
                                        day > 5 ~ "Weekend")),
@@ -66,40 +78,55 @@ steps_1min <-  steps_1min %>%
          plottime = as.POSIXct(timeonly, format = "%H:%M")
   )
 
+# append stepday classification to minute step data
+steps_1min_stepdaysonly <- dailyactivity %>% 
+  select(ActivityDate, stepday) %>% 
+  rename(., date = ActivityDate) %>% # rename ActivityDate to date for easy merge
+  left_join(steps_1min, .)
+
+##### Data Aggregation #####
+
+##### Plots #####
+
 # Steps Per Year plot
 steps_year_plot <- ggplot(dailyactivity, aes(year, TotalSteps)) +
   geom_col(fill = "#1C3F6F") +
   scale_x_continuous(breaks = 2011:2018) +
   scale_y_continuous(labels = comma, limits = c(0, 5000000)) +
   labs(title = "Steps Per Year",
-       subtitle = "26 Million Steps",
+       subtitle = "2,338 Days & 26 Million Steps",
        x='Year', 
        y='Fitbit Steps') +
   theme_hc()
 
-steps_year_plot
+ggsave("stepsyear.tiff", width = 13.33, height = 7.5, units = "in")
 
 # minute steps plot
-all_minute_steps <- ggplot(steps_1min, aes(x=plottime, y=Steps)) + 
-  geom_point(size=.5, alpha = 0.05) + 
+all_minute_steps <- ggplot(steps_1min_stepdaysonly, aes(x=plottime, y=Steps)) + 
+  geom_point(size=.5, alpha = 0.04, colour = "#1C3F6F") + 
   scale_x_datetime(breaks=date_breaks("4 hour"), labels=date_format("%H:%M", tz="")) +
-  labs(title='All of the Steps') +
+  labs(title = "Steps per Minute",
+       subtitle = "Visualizing 28M Steps Across 7+ Years",
+       x = "Time of Day",
+       y = "Step Count") +
   theme(legend.position="none") +
   theme_hc()
 
-ggsave("allminutesteps.pdf", width = 13.33, height = 7.5, units = "in")
+ggsave("allminutesteps.tiff", width = 13.33, height = 7.5, units = "in")
 
 # minute heart rate plot
 all_minute_hr <- ggplot(heartrate_1min, aes(plottime, Value)) +
-  geom_point(size=.5, alpha = 0.1, color="red") + 
+  geom_point(size=.5, alpha = 0.05, color="red") + 
   scale_x_datetime(breaks=date_breaks("4 hour"), labels=date_format("%H:%M", tz="")) +
-  labs(title="One Year of Heart Rate Data", 
-       subtite="October 5, 2016 - October 4, 2017",
-       x = "Time", 
-       y = "Heart Rate") 
-
+  labs(title = "775,549 Heart Rates", 
+       subtitle = "October 5, 2016 - April 20, 2018",
+       x = "Time of Day", 
+       y = "Heart Rate (beats per minute)") +
+  theme_hc()
 
 ggsave("allminutehr.tiff", width = 13.33, height = 7.5, units = "in")
+
+# 
 
 
 
