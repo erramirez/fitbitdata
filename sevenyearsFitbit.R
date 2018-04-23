@@ -5,6 +5,9 @@ library(grid)
 library(lubridate)
 library(here)
 library(scales)
+library(hrbrthemes)
+
+import_roboto_condensed()
 
 ##### Read in Data #####
 
@@ -86,18 +89,32 @@ steps_1min_stepdaysonly <- dailyactivity %>%
 
 ##### Data Aggregation #####
 
+# calculate number of "step days" per year
+stepdays <- dailyactivity %>% 
+  group_by(year) %>% 
+  summarise(stepdays = sum(stepday),
+            totalsteps = sum(TotalSteps))
+
+meanhr
+
 ##### Plots #####
 
 # Steps Per Year plot
 steps_year_plot <- ggplot(dailyactivity, aes(year, TotalSteps)) +
   geom_col(fill = "#1C3F6F") +
+  geom_text(data = stepdays, aes(x = year, y = (totalsteps - 150000), label= stepdays
+                ),
+            hjust= .5, 
+            size=6,
+            color="white") +
   scale_x_continuous(breaks = 2011:2018) +
   scale_y_continuous(labels = comma, limits = c(0, 5000000)) +
-  labs(title = "Steps Per Year",
-       subtitle = "2,338 Days & 26 Million Steps",
-       x='Year', 
-       y='Fitbit Steps') +
-  theme_hc()
+  labs(title = "26 Million Fitbit Steps",
+       subtitle = "Feb 27, 2011 - April 20, 2018",
+       x = "Year", 
+       y = "Fitbit Steps",
+       caption = "Bar labels indicate total number of wear days with >0 steps.") +
+  theme_ipsum_rc()
 
 ggsave("stepsyear.tiff", width = 13.33, height = 7.5, units = "in")
 
