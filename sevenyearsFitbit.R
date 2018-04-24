@@ -237,14 +237,56 @@ scale_x_datetime(breaks=date_breaks("4 hour"), labels = date_format("%H:%M", tz 
 ggsave("weekendmeanhr.tiff", width = 13.33, height = 7.5, units = "in")
 
 
-# baby data steps plot
+# baby data steps difference
+
+baby_meanSteps <- ggplot(babydata_dailyactivity_grouped, aes(baby, meansteps, fill = baby)) +
+  geom_col() +
+  scale_y_continuous(labels = comma, limits = c(0, 12000)) +
+  labs(title = "Impact of Parenthood on \nDaily Steps",
+       subtitle = "mean daily step count 70 days pre/post",
+       x = "",
+       y = "Mean Daily Steps",
+       fill = ""
+  ) +
+  theme_ipsum_rc()
+
+ggsave("babymeanstepsdiff.tiff", width = (13.33/3), height = 7.5, units = "in")
+
+baby_meanMVPA <- ggplot(babydata_dailyactivity_grouped, aes(baby, meanMVPA, fill = baby)) +
+  geom_col() +
+  scale_y_continuous(labels = comma, limits = c(0, 65)) +
+  labs(title = "Impact of Parenthood on \nMVPA Minutes",
+       subtitle = "mean MVPA minutes 70 days pre/post",
+       x = "",
+       y = "Mean Daily MVPA Minutes",
+       fill = ""
+  ) +
+  theme_ipsum_rc()
+
+ggsave("babymeanMVPAdiff.tiff", width = (13.33/3), height = 7.5, units = "in")
+
+baby_meansedentary <- ggplot(babydata_dailyactivity_grouped, aes(baby, meansedentary, fill = baby)) +
+  geom_col() +
+  scale_y_continuous(labels = comma, limits = c(0, 700)) +
+  labs(title = "Impact of Parenthood on \nSedentary Time",
+       subtitle = "mean sedentary minutes 70 days pre/post",
+       x = "",
+       y = "Mean Daily Sedentary Minutes",
+       fill = ""
+  ) +
+  theme_ipsum_rc()
+
+ggsave("babymeansedentarydiff.tiff", width = (13.33/3), height = 7.5, units = "in")
+
+baby_meanintensity
+# baby data daily teps plot
 baby_dailysteps <- ggplot(babydata_dailyactivity, aes(ActivityDate, TotalSteps, colour = baby)) +
   geom_line() + 
   geom_point() + 
   geom_smooth() + 
   scale_y_continuous(labels = comma) +
-  labs(title = "Impact of Parenthood on Daily Steps",
-       subtitle = "70 days pre and post",
+  labs(title = "Impact of Parenthood on Activity",
+       subtitle = "daily step count 70 days pre/post",
        x = "Date",
        y = "Daily Total Steps",
        colour = ""
