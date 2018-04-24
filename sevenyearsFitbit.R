@@ -95,7 +95,21 @@ stepdays <- dailyactivity %>%
   summarise(stepdays = sum(stepday),
             totalsteps = sum(TotalSteps))
 
-meanhr
+# calculate mean and sd heart rate for weekdays and weekend days
+meanhr <- heartrate_1min %>% 
+  group_by(timeonly, weekday) %>% 
+  summarise(mean = mean(Value),
+            sd = sd(Value)
+            ) %>% 
+  mutate(plottime = as.POSIXct(timeonly, format = "%H:%M"))
+
+# create pre/post baby data set
+babydata_dailyactivity <- dailyactivity %>% 
+  filter(ActivityDate >= "2017-11-26" & ActivityDate <= "2018-04-15")
+
+babydata_steps1min<- steps_1min %>% 
+  filter(date >= "2017-11-26" & date <= "2018-04-15")
+
 
 ##### Plots #####
 
@@ -104,9 +118,9 @@ steps_year_plot <- ggplot(dailyactivity, aes(year, TotalSteps)) +
   geom_col(fill = "#1C3F6F") +
   geom_text(data = stepdays, aes(x = year, y = (totalsteps - 150000), label= stepdays
                 ),
-            hjust= .5, 
-            size=6,
-            color="white") +
+            hjust = .5, 
+            size = 6,
+            color = "white") +
   scale_x_continuous(breaks = 2011:2018) +
   scale_y_continuous(labels = comma, limits = c(0, 5000000)) +
   labs(title = "26 Million Fitbit Steps",
@@ -119,31 +133,56 @@ steps_year_plot <- ggplot(dailyactivity, aes(year, TotalSteps)) +
 ggsave("stepsyear.tiff", width = 13.33, height = 7.5, units = "in")
 
 # minute steps plot
-all_minute_steps <- ggplot(steps_1min_stepdaysonly, aes(x=plottime, y=Steps)) + 
-  geom_point(size=.5, alpha = 0.04, colour = "#1C3F6F") + 
-  scale_x_datetime(breaks=date_breaks("4 hour"), labels=date_format("%H:%M", tz="")) +
+all_minute_steps <- ggplot(steps_1min_stepdaysonly, aes(x = plottime, y = Steps)) + 
+  geom_point(size = .5, alpha = 0.04, colour = "#1C3F6F") + 
+  scale_x_datetime(breaks=date_breaks("4 hour"), labels = date_format("%H:%M", tz = "")) +
   labs(title = "Steps per Minute",
        subtitle = "Visualizing 28M Steps Across 7+ Years",
        x = "Time of Day",
        y = "Step Count") +
   theme(legend.position="none") +
-  theme_hc()
+  theme_ipsum_rc()
 
 ggsave("allminutesteps.tiff", width = 13.33, height = 7.5, units = "in")
 
 # minute heart rate plot
 all_minute_hr <- ggplot(heartrate_1min, aes(plottime, Value)) +
-  geom_point(size=.5, alpha = 0.05, color="red") + 
-  scale_x_datetime(breaks=date_breaks("4 hour"), labels=date_format("%H:%M", tz="")) +
+  geom_point(size = .5, alpha = 0.05, color="red") + 
+  scale_x_datetime(breaks=date_breaks("4 hour"), labels = date_format("%H:%M", tz = "")) +
   labs(title = "775,549 Heart Rates", 
        subtitle = "October 5, 2016 - April 20, 2018",
        x = "Time of Day", 
        y = "Heart Rate (beats per minute)") +
-  theme_hc()
+  theme_ipsum_rc()
 
 ggsave("allminutehr.tiff", width = 13.33, height = 7.5, units = "in")
 
-# 
+# minute heart rate plot + weekday average
+weekday_mean_hr <- ggplot(heartrate_1min, aes(plottime, Value)) +
+  geom_point(size = .5, alpha = 0.05, color="grey") + 
+  geom_point(data = subset(meanhr, weekday == "Weekday"), aes(plottime, mean), 
+             size = .5, color="red") +
+  scale_x_datetime(breaks=date_breaks("4 hour"), labels = date_format("%H:%M", tz = "")) +
+  labs(title = "Weekday Mean Heart Rate ", 
+       subtitle = "October 5, 2016 - April 20, 2018",
+       x = "Time of Day", 
+       y = "Heart Rate (beats per minute)") +
+  theme_ipsum_rc()
 
+ggsave("weekdaymeanhr.tiff", width = 13.33, height = 7.5, units = "in")
+
+# minute heart rate plot + weekend average
+weekend_mean_hr <- ggplot(heartrate_1min, aes(plottime, Value)) +
+  geom_point(size = .5, alpha = 0.05, color="grey") + 
+  geom_point(data = subset(meanhr, weekday == "Weekend"), aes(plottime, mean), 
+             size = .5, color = "yellow") +
+scale_x_datetime(breaks=date_breaks("4 hour"), labels=date_format("%H:%M", tz = "")) +
+  labs(title = "Weekend Mean Heart Rate ", 
+       subtitle = "October 5, 2016 - April 20, 2018",
+       x = "Time of Day", 
+       y = "Heart Rate (beats per minute)") +
+  theme_ipsum_rc()
+
+ggsave("weekendmeanhr.tiff", width = 13.33, height = 7.5, units = "in")
 
 
