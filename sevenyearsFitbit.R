@@ -13,7 +13,12 @@ import_roboto_condensed()
 
 # daily activity file read in with date format change
 dailyactivity <- read_csv(here("data", "dailyActivity.csv"), 
-                          col_types = cols(ActivityDate = col_date(format = "%m/%d/%Y"))
+                          col_types = cols(ActivityDate = col_date(format = "%m/%d/%Y"),
+                                           Floors = col_integer(),
+                                           CaloriesBMR = col_integer(),
+                                           MarginalCalories = col_integer(),
+                                           RestingHeartRate = col_integer()
+                                           ) 
                           )
 
 # activity log file read in with date and time format change
@@ -34,10 +39,13 @@ intensity_1min <- read_csv(here("data", "minuteIntensitiesNarrow.csv"),
                            )
 
 # steps per minute file read in with datetime format change
-steps_1min <- read_csv(here("data", "minuteStepsNarrow.csv"), 
-                           col_types = cols(ActivityMinute = col_datetime(format = "%m/%d/%Y %H:%M:%S %p"))
+steps_1min <- read_csv(here("data", "minuteStepsNarrow.csv"),
+                       col_types = cols(ActivityMinute = col_datetime(format = "%m/%d/%Y %H:%M:%S %p"))
                        )
 
+sleeplogs <- read_csv(here("data", "sleepStageLogInfo.csv"),
+                      col_types = cols(StartTime = col_datetime(format = "%m/%d/%Y %H:%M:%S %p"))
+                      )
 
 ##### Add Additional Variables #####
 
@@ -52,6 +60,12 @@ dailyactivity <- dailyactivity %>%
                              day > 5 ~ "Weekend")),
          stepday = ifelse(TotalSteps > 0, 1, 0) 
          )
+
+# add end datetime for sleep record
+sleeplogs <- sleeplogs%>% 
+  mutate(duration_period = as.period(Duration/1000, "seconds"),
+         EndTime = (StartTime + duration_period)
+  )
 
 # break up date and time into separate variables for minute files
 # use getOption("lubridate.week.start", 1) to set week to start on Monday
@@ -105,10 +119,45 @@ meanhr <- heartrate_1min %>%
 
 # create pre/post baby data set
 babydata_dailyactivity <- dailyactivity %>% 
-  filter(ActivityDate >= "2017-11-26" & ActivityDate <= "2018-04-15")
+  filter(ActivityDate >= "2017-11-27" & ActivityDate <= "2018-04-15") %>% 
+  mutate(baby = case_when(ActivityDate < "2018-02-04" ~ "Pre Baby",
+                          ActivityDate >= "2018-02-04" ~ "Post Baby"),
+         baby = factor(baby, levels = c("Pre Baby", "Post Baby"))
+    )
+
+babydata_dailyactivity_grouped <- babydata_dailyactivity %>% 
+  group_by(baby) %>% 
+  summarise(days = n(),
+            totalsteps = sum(TotalSteps),
+            totalMVPA = sum(FairlyActiveMinutes + VeryActiveMinutes),
+            sumsedentary = sum(SedentaryMinutes),
+            meansteps = mean(TotalSteps),
+            meanMVPA = mean(FairlyActiveMinutes + VeryActiveMinutes),
+            meansedentary = mean(SedentaryMinutes),
+            meanrestingHR = mean(RestingHeartRate)
+            )
 
 babydata_steps1min<- steps_1min %>% 
-  filter(date >= "2017-11-26" & date <= "2018-04-15")
+  filter(date >= "2017-11-27" & date <= "2018-04-15")
+
+babydata_sleeplogs <- sleeplogs %>% 
+  filter(as.Date(StartTime) >= "2017-11-27" & as.Date(StartTime) <= "2018-04-15") %>% 
+  mutate(baby = case_when(as.Date(StartTime) < "2018-02-04" ~ "Pre Baby",
+                          as.Date(StartTime) >= "2018-02-04" ~ "Post Baby"),
+         baby = factor(baby, levels = c("Pre Baby", "Post Baby"))
+  )
+
+babydata_sleeplogs_grouped <- babydata_sleeplogs %>% 
+  group_by(baby) %>% 
+  summarise(days = n(),
+            totalsleepduration = sum(Duration),
+            meansleepduration = mean(Duration),
+            meandeepsleep = mean(StagesDeepDuration, na.rm = TRUE),
+            meenlightsleep = mean(StagesLightDuration, na.rm = TRUE),
+            meanREMsleep = mean(StagesREMDuration, na.rm = TRUE),
+            meanAwake = mean(StagesWakeDuration, na.rm = TRUE)
+  )
+  
 
 
 ##### Plots #####
@@ -171,12 +220,14 @@ weekday_mean_hr <- ggplot(heartrate_1min, aes(plottime, Value)) +
 
 ggsave("weekdaymeanhr.tiff", width = 13.33, height = 7.5, units = "in")
 
-# minute heart rate plot + weekend average
+# minute heart rate plot + weekday average  + weekend average
 weekend_mean_hr <- ggplot(heartrate_1min, aes(plottime, Value)) +
   geom_point(size = .5, alpha = 0.05, color="grey") + 
+  geom_point(data = subset(meanhr, weekday == "Weekday"), aes(plottime, mean), 
+             size = .5, alpha = 0.08, color="red") +
   geom_point(data = subset(meanhr, weekday == "Weekend"), aes(plottime, mean), 
              size = .5, color = "yellow") +
-scale_x_datetime(breaks=date_breaks("4 hour"), labels=date_format("%H:%M", tz = "")) +
+scale_x_datetime(breaks=date_breaks("4 hour"), labels = date_format("%H:%M", tz = "")) +
   labs(title = "Weekend Mean Heart Rate ", 
        subtitle = "October 5, 2016 - April 20, 2018",
        x = "Time of Day", 
@@ -186,3 +237,21 @@ scale_x_datetime(breaks=date_breaks("4 hour"), labels=date_format("%H:%M", tz = 
 ggsave("weekendmeanhr.tiff", width = 13.33, height = 7.5, units = "in")
 
 
+# baby data steps plot
+baby_dailysteps <- ggplot(babydata_dailyactivity, aes(ActivityDate, TotalSteps, colour = baby)) +
+  geom_line() + 
+  geom_point() + 
+  geom_smooth() + 
+  scale_y_continuous(labels = comma) +
+  labs(title = "Impact of Parenthood on Daily Steps",
+       subtitle = "70 days pre and post",
+       x = "Date",
+       y = "Daily Total Steps",
+       colour = ""
+       ) +
+  scale_x_date(breaks = date_breaks("1 week"), date_labels = "%m/%d/%y") +
+  theme_ipsum_rc() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+                            
+ggsave("babydailysteps.tiff", width = 13.33, height = 7.5, units = "in")
+                            
