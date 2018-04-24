@@ -252,17 +252,23 @@ dailyactivitycalendar <- dailyactivity %>%
 
 dailystepcalendar <- ggplot_calendar_heatmap(dailyactivitycalendar, "ActivityDate", "TotalSteps",
                              dayBorderSize = 0.5, dayBorderColour = "white",
-                             monthBorderSize = 0.75, monthBorderColour = "transparent",
+                             monthBorderSize = 1, monthBorderColour = "white",
                              monthBorderLineEnd = "round") +
-  xlab(NULL) +
-  ylab(NULL) +
-  scale_fill_continuous(name = "Daily \nSteps", breaks = c(10000, 30000, 50000), low = "#deebf7", high = "#3182bd", 
+  labs(title = "Daily Step Patterns",
+       subtitle = "Feb 27, 2011 - April 20, 2018",
+       x = "",
+       y = "") +
+  scale_fill_continuous(name = "Daily Steps", breaks = c(10000, 30000, 50000), low = "green", high = "red", 
                         na.value = "#E8E8E8") +
   facet_wrap(~Year, ncol = 1) +
   theme_tufte() +
-  theme(strip.text = element_text(), axis.ticks = element_blank(), legend.position = "bottom")
+  theme(strip.text = element_text(), axis.ticks = element_blank(), legend.position = "bottom",
+        axis.text.y = element_text(size = 6, color = "#666666"),
+        legend.title = element_text(size = 8, color = "#666666"),
+        legend.text = element_text(size = 6, color = "#666666")
+        )
 
-ggsave("dailystepcalendar.tiff", width = 13.33, height = 7.5, units = "in")
+ggsave("dailystepcalendar.tiff", width = 7.5, height = 13.33, units = "in")
 
 # minute steps plot
 all_minute_steps <- ggplot(steps_1min_stepdaysonly, aes(x = plottime, y = Steps)) + 
