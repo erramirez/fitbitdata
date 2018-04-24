@@ -6,6 +6,8 @@ library(lubridate)
 library(here)
 library(scales)
 library(hrbrthemes)
+library(ggcal)
+
 
 import_roboto_condensed()
 
@@ -180,6 +182,87 @@ steps_year_plot <- ggplot(dailyactivity, aes(year, TotalSteps)) +
   theme_ipsum_rc()
 
 ggsave("stepsyear.tiff", width = 13.33, height = 7.5, units = "in")
+
+
+## Calendar Data and Plots
+
+# create yearly vectors for date
+dates2011 <- subset(dailyactivity$ActivityDate, dailyactivity$ActivityDate < "2012-01-01")
+dates2012 <- subset(dailyactivity$ActivityDate, 
+                    dailyactivity$ActivityDate >= "2012-01-01" & dailyactivity$ActivityDate < "2013-01-01")
+dates2013 <- subset(dailyactivity$ActivityDate, 
+                    dailyactivity$ActivityDate >= "2013-01-01" & dailyactivity$ActivityDate < "2014-01-01")
+dates2014 <- subset(dailyactivity$ActivityDate, 
+                    dailyactivity$ActivityDate >= "2014-01-01" & dailyactivity$ActivityDate < "2015-01-01")
+dates2015 <- subset(dailyactivity$ActivityDate, 
+                    dailyactivity$ActivityDate >= "2015-01-01" & dailyactivity$ActivityDate < "2016-01-01")
+dates2016 <- subset(dailyactivity$ActivityDate, 
+                    dailyactivity$ActivityDate >= "2016-01-01" & dailyactivity$ActivityDate < "2017-01-01")
+dates2017 <- subset(dailyactivity$ActivityDate, 
+                    dailyactivity$ActivityDate >= "2017-01-01" & dailyactivity$ActivityDate < "2018-01-01")
+dates2018 <- subset(dailyactivity$ActivityDate, 
+                    dailyactivity$ActivityDate >= "2018-01-01" & dailyactivity$ActivityDate < "2019-01-01")
+
+# create yearly vectors for TotalSteps
+steps2011 <- subset(dailyactivity$TotalSteps, dailyactivity$ActivityDate < "2012-01-01")
+steps2012 <- subset(dailyactivity$TotalSteps, 
+                    dailyactivity$ActivityDate >= "2012-01-01" & dailyactivity$ActivityDate < "2018-01-01")
+steps2013 <- subset(dailyactivity$TotalSteps, 
+                    dailyactivity$ActivityDate >= "2013-01-01" & dailyactivity$ActivityDate < "2018-01-01")
+steps2014 <- subset(dailyactivity$TotalSteps, 
+                    dailyactivity$ActivityDate >= "2014-01-01" & dailyactivity$ActivityDate < "2018-01-01")
+steps2015 <- subset(dailyactivity$TotalSteps, 
+                    dailyactivity$ActivityDate >= "2015-01-01" & dailyactivity$ActivityDate < "2018-01-01")
+steps2016 <- subset(dailyactivity$TotalSteps,
+                    dailyactivity$ActivityDate >= "2016-01-01" & dailyactivity$ActivityDate < "2018-01-01")
+steps2017 <- subset(dailyactivity$TotalSteps, 
+                    dailyactivity$ActivityDate >= "2017-01-01" & dailyactivity$ActivityDate < "2018-01-01")
+steps2018 <- subset(dailyactivity$TotalSteps, 
+                    dailyactivity$ActivityDate >= "2018-01-01" & dailyactivity$ActivityDate < "2019-01-01")
+
+# daily step calendar heatmap with ggcal
+stepcalendar2011 <- ggcal(dates2011, steps2011)
+
+ggsave("steps2011.tiff", width = 4, height = 7, units = "in")
+
+# using FlowingData CalendarTutorial
+source("calendarCustom.R")
+par(mfrow = c(5,2), oma=c(0, 0, 0, 0), mar=c(0, 0, 0, 0))
+calendarFlow(dates2011, steps2011, palette="bluegray")
+calendarFlow(dates2012, steps2012, palette="bluegray")
+calendarFlow(dates2013, steps2013, palette="bluegray")
+calendarFlow(dates2014, steps2014, palette="bluegray")
+calendarFlow(dates2015, steps2015, palette="bluegray")
+calendarFlow(dates2016, steps2016, palette="bluegray")
+calendarFlow(dates2017, steps2017, palette="bluegray")
+calendarFlow(dates2018, steps2018, palette="bluegray")
+
+
+# marcusvolz calendar example code
+devtools::install_github("marcusvolz/ggart")
+devtools::install_github("AtherEnergy/ggTimeSeries")
+library(ggart)
+library(ggthemes)
+library(ggTimeSeries)
+
+dailyactivitycalendar <- dailyactivity %>% 
+  mutate(TotalSteps = case_when(TotalSteps == 0 ~ NA_integer_,
+                                TotalSteps > 0 ~ TotalSteps)
+         )
+
+dailystepcalendar <- ggplot_calendar_heatmap(dailyactivitycalendar, "ActivityDate", "TotalSteps",
+                             dayBorderSize = 0.5, dayBorderColour = "white",
+                             monthBorderSize = 0.75, monthBorderColour = "transparent",
+                             monthBorderLineEnd = "round") +
+  xlab(NULL) +
+  ylab(NULL) +
+  scale_fill_continuous(name = "Daily \nSteps", breaks = c(10000, 30000, 50000), low = "#deebf7", high = "#3182bd", 
+                        na.value = "#E8E8E8") +
+  facet_wrap(~Year, ncol = 1) +
+  theme_tufte() +
+  theme(strip.text = element_text(), axis.ticks = element_blank(), legend.position = "bottom")
+
+ggsave("dailystepcalendar.tiff", width = 13.33, height = 7.5, units = "in")
 
 # minute steps plot
 all_minute_steps <- ggplot(steps_1min_stepdaysonly, aes(x = plottime, y = Steps)) + 
