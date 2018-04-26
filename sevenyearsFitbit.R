@@ -63,6 +63,12 @@ dailyactivity <- dailyactivity %>%
          stepday = ifelse(TotalSteps > 0, 1, 0) 
          )
 
+
+dailyactivity_zeroisNA <- dailyactivity %>% 
+  mutate(TotalSteps = case_when(TotalSteps == 0 ~ NA_integer_,
+                                TotalSteps > 0 ~ TotalSteps)
+  )
+
 # add end datetime for sleep record
 sleeplogs <- sleeplogs%>% 
   mutate(duration_period = as.period(Duration/1000, "seconds"),
@@ -183,6 +189,21 @@ steps_year_plot <- ggplot(dailyactivity, aes(year, TotalSteps)) +
 
 ggsave("stepsyear.tiff", width = 13.33, height = 7.5, units = "in")
 
+# daily steps plot
+daily_steps_plot <- ggplot(dailyactivity_zeroisNA, aes(ActivityDate, TotalSteps, colour = as.factor(year))) +
+  geom_point() +
+  geom_smooth() + # adds smoothing line per year
+  scale_x_date(breaks = date_breaks("4 month"), date_labels = "%m/%d/%y") +
+  scale_y_continuous(labels = comma, limits = c(0, 60000)) +
+  labs(title = "Daily Fitbit Steps",
+       subtitle = "Feb 27, 2011 - April 20, 2018",
+       x = "Date", 
+       y = "Daily Total Fitbit Steps",
+       colour = "") +
+  theme_ipsum_rc() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggsave("dailysteps.tiff", width = 13.33, height = 7.5, units = "in")
 
 ## Calendar Data and Plots
 
@@ -206,15 +227,15 @@ dates2018 <- subset(dailyactivity$ActivityDate,
 # create yearly vectors for TotalSteps
 steps2011 <- subset(dailyactivity$TotalSteps, dailyactivity$ActivityDate < "2012-01-01")
 steps2012 <- subset(dailyactivity$TotalSteps, 
-                    dailyactivity$ActivityDate >= "2012-01-01" & dailyactivity$ActivityDate < "2018-01-01")
+                    dailyactivity$ActivityDate >= "2012-01-01" & dailyactivity$ActivityDate < "2013-01-01")
 steps2013 <- subset(dailyactivity$TotalSteps, 
-                    dailyactivity$ActivityDate >= "2013-01-01" & dailyactivity$ActivityDate < "2018-01-01")
+                    dailyactivity$ActivityDate >= "2013-01-01" & dailyactivity$ActivityDate < "2014-01-01")
 steps2014 <- subset(dailyactivity$TotalSteps, 
-                    dailyactivity$ActivityDate >= "2014-01-01" & dailyactivity$ActivityDate < "2018-01-01")
+                    dailyactivity$ActivityDate >= "2014-01-01" & dailyactivity$ActivityDate < "2015-01-01")
 steps2015 <- subset(dailyactivity$TotalSteps, 
-                    dailyactivity$ActivityDate >= "2015-01-01" & dailyactivity$ActivityDate < "2018-01-01")
+                    dailyactivity$ActivityDate >= "2015-01-01" & dailyactivity$ActivityDate < "2016-01-01")
 steps2016 <- subset(dailyactivity$TotalSteps,
-                    dailyactivity$ActivityDate >= "2016-01-01" & dailyactivity$ActivityDate < "2018-01-01")
+                    dailyactivity$ActivityDate >= "2016-01-01" & dailyactivity$ActivityDate < "2017-01-01")
 steps2017 <- subset(dailyactivity$TotalSteps, 
                     dailyactivity$ActivityDate >= "2017-01-01" & dailyactivity$ActivityDate < "2018-01-01")
 steps2018 <- subset(dailyactivity$TotalSteps, 
@@ -245,12 +266,8 @@ library(ggart)
 library(ggthemes)
 library(ggTimeSeries)
 
-dailyactivitycalendar <- dailyactivity %>% 
-  mutate(TotalSteps = case_when(TotalSteps == 0 ~ NA_integer_,
-                                TotalSteps > 0 ~ TotalSteps)
-         )
 
-dailystepcalendar <- ggplot_calendar_heatmap(dailyactivitycalendar, "ActivityDate", "TotalSteps",
+dailystepcalendar <- ggplot_calendar_heatmap(dailyactivity_zeroisNA, "ActivityDate", "TotalSteps",
                              dayBorderSize = 0.5, dayBorderColour = "white",
                              monthBorderSize = 1, monthBorderColour = "white",
                              monthBorderLineEnd = "round") +
@@ -368,7 +385,7 @@ baby_meansedentary <- ggplot(babydata_dailyactivity_grouped, aes(baby, meanseden
 ggsave("babymeansedentarydiff.tiff", width = (13.33/3), height = 7.5, units = "in")
 
 baby_meanintensity
-# baby data daily teps plot
+# baby data daily steps plot
 baby_dailysteps <- ggplot(babydata_dailyactivity, aes(ActivityDate, TotalSteps, colour = baby)) +
   geom_line() + 
   geom_point() + 
